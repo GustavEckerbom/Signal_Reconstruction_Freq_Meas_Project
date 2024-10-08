@@ -18,13 +18,24 @@ time_increment = 1 / sampling_rate;  % Time increment from sampling rate
 n_samples = length(volt);  % Total number of samples in the full signal
 time = (0:n_samples-1) * time_increment;  % Time vector for the full signal
 
-% Signal duration for saving (40 seconds)
+% Signal duration for saving (4 seconds)
 save_duration = 40;
 
 % Frequencies and sampling rates to be used
 frequencies = [49, 49.5, 50, 50.5, 51];
 sampling_rates = [2000, 64000, 150000];  % 2ksps, 64ksps, 150ksps
 sampling_names = ["2ksps", "64ksps", "150ksps"];
+
+% Find a starting point close to a zero crossing in the original signal
+threshold = 0.0001;  % Define a threshold for finding a value close to zero
+zero_crossing_idx = find(abs(volt) < threshold, 1);  % Find the first index where the voltage is close to zero
+
+if isempty(zero_crossing_idx)
+    warning('No sample near zero found. Using default start time.');
+    start_sample = 1;  % Default to the first sample if no zero-crossing is found
+else
+    start_sample = zero_crossing_idx;
+end
 
 % Initialize a structure to store the signals for each sampling rate
 for rate_idx = 1:length(sampling_rates)
@@ -39,11 +50,9 @@ for rate_idx = 1:length(sampling_rates)
     for freq_idx = 1:length(frequencies)
         fundamental_freq = frequencies(freq_idx);
 
-        % Capture a 2-second slice from the original signal
+        % Capture a 0.1-second slice from the original signal
         slice_duration = 2;  % Duration of the slice in seconds
-        samples_per_slice = slice_duration * sampling_rate;  % Number of samples for 2 seconds
-        start_time = 1;  % Start time in seconds (adjust as needed)
-        start_sample = round(start_time * sampling_rate);
+        samples_per_slice = slice_duration * sampling_rate;  % Number of samples for 4 seconds
         end_sample = start_sample + samples_per_slice - 1;
         short_signal = volt(start_sample:end_sample);
 
@@ -68,9 +77,20 @@ for rate_idx = 1:length(sampling_rates)
         noise_floor_dBc = mean(P1_dBc);  % Use mean value of the spectrum as noise floor
         threshold_dBc = noise_floor_dBc + 10;
 
-        % Identify significant frequencies above threshold
-        valid_frequencies = f > 20;  % Logical array for frequencies above 40 Hz
-        significant_bins = (P1_dBc > threshold_dBc) & valid_frequencies;
+        % Define the harmonic frequencies (50, 100, 150, ..., 1000 Hz)
+        harmonics = 50:50:1000;  % Fundamental and harmonic frequencies
+        
+        % Initialize the significant_bins array as all false
+        significant_bins = false(size(f));  
+        
+        % Loop through each harmonic and find the closest bin to the harmonic frequency
+        for harmonic = harmonics
+            % Find the index of the closest frequency bin to the current harmonic
+            [~, bin_idx] = min(abs(f - harmonic));
+            
+            % Mark only the closest bin as significant
+            significant_bins(bin_idx) = true;
+        end
 
         % Get phase information from the FFT result
         phase = angle(Y);  % Phase of each frequency bin
@@ -101,17 +121,15 @@ for rate_idx = 1:length(sampling_rates)
         total_noise_power = noise_floor_linear * sqrt(n_bins);  % Total noise power
         white_noise_high = total_noise_power * randn(1, extended_samples_high);  % White noise
         reconstructed_signal_with_noise_extended_high = reconstructed_signal_extended_high + white_noise_high;
-        
 
-       % Format the signal name for the structure
-    if mod(fundamental_freq, 1) == 0
-        % If the frequency is an integer, format without a decimal
-        signal_name = sprintf('Signal_%02d_0Hz_%s', fundamental_freq, sampling_names(rate_idx));
-    else
-        % If the frequency has a decimal, format with an underscore instead of a period
-        signal_name = sprintf('Signal_%02d_%01dHz_%s', floor(fundamental_freq), round(10*(fundamental_freq-floor(fundamental_freq))), sampling_names(rate_idx));
-    end
-
+        % Format the signal name for the structure
+        if mod(fundamental_freq, 1) == 0
+            % If the frequency is an integer, format without a decimal
+            signal_name = sprintf('Signal_%02d_0Hz_%s', fundamental_freq, sampling_names(rate_idx));
+        else
+            % If the frequency has a decimal, format with an underscore instead of a period
+            signal_name = sprintf('Signal_%02d_%01dHz_%s', floor(fundamental_freq), round(10*(fundamental_freq-floor(fundamental_freq))), sampling_names(rate_idx));
+        end
 
         signal_struct.(signal_name) = reconstructed_signal_with_noise_extended_high;
     end
@@ -125,69 +143,31 @@ for rate_idx = 1:length(sampling_rates)
     end
     
     % Save the signals to a .mat file in the subfolder
-    filename = sprintf('Reconstructed_Signal_%s_40s.mat', sampling_names(rate_idx));
+    filename = sprintf('Reconstructed_Signal_%s_%ds.mat', sampling_names(rate_idx), save_duration);
     fullpath = fullfile(subfolder, filename);
     save(fullpath, '-struct', 'signal_struct');
-
 end
 
 % //////////// Helper functions //////////////
-
-function [selected_bins] = find_consecutive_bins(central_freq, f, significant_bins)
-    % This function finds all consecutive significant bins around a central frequency
-    % central_freq - The central frequency (e.g., 50 Hz, 100 Hz, etc.)
-    % f - Frequency vector
-    % significant_bins - Vector of true/false for significant bins
-    
-    selected_bins = [];  % Initialize an empty array for selected bins
-    % Find the bin closest to the central frequency
-    [~, central_idx] = min(abs(f - central_freq));
-    
-    % Search to the left of the central bin
-    idx = central_idx;
-    while idx > 1 && significant_bins(idx)
-        selected_bins = [idx, selected_bins];  % Add to the left
-        idx = idx - 1;
-    end
-    
-    % Search to the right of the central bin
-    idx = central_idx + 1;
-    while idx <= length(f) && significant_bins(idx)
-        selected_bins = [selected_bins, idx];  % Add to the right
-        idx = idx + 1;
-    end
-end
-
 
 function [P1_shifted, phase_shifted] = shift_harmonics(f, P1, phase, significant_bins, delta_f)
     % Initialize the shifted vectors
     P1_shifted = zeros(size(P1));  
     phase_shifted = zeros(size(phase));
-    
-    % Define harmonics (fundamental, 1st, 2nd, ..., up to 1000 Hz)
-    harmonics = 50:50:1000;
-    
-    % Loop through each harmonic and shift the significant bins
-    for harmonic_number = 1:length(harmonics)
-        central_freq = harmonics(harmonic_number);  % Current harmonic frequency
-        harmonic_shift = harmonic_number * delta_f;  % Shift amount
-        
-        % Find the significant bins around the central harmonic
-        selected_bins = find_consecutive_bins(central_freq, f, significant_bins);
-        
-        % Shift the bins and handle overwriting
-        for i = 1:length(selected_bins)
-            bin_idx = selected_bins(i);
-            new_freq = f(bin_idx) + harmonic_shift;  % Shift the frequency
-            
+
+    % Loop through the fundamental and harmonic frequencies
+    for k = 1:length(f)
+        if significant_bins(k)  % Only shift significant harmonic bins
+            harmonic_shift = delta_f;  % Shift based on the fundamental frequency offset
+
+            new_freq = f(k) + harmonic_shift;  % Shift the frequency
+
             % Find the closest new bin (after shifting)
             [~, new_idx] = min(abs(f - new_freq));
-            
+
             % Move amplitude and phase to the new bin
-            P1_shifted(new_idx) = P1(bin_idx);
-            phase_shifted(new_idx) = phase(bin_idx);
+            P1_shifted(new_idx) = P1(k);
+            phase_shifted(new_idx) = phase(k);
         end
     end
 end
-
-

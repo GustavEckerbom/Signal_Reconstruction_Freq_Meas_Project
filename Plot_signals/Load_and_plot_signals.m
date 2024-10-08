@@ -21,23 +21,23 @@ sampling_rate = str2double(regexp(filename, '\d+', 'match', 'once')) * 1000;  % 
 time_duration = 1;  % Plot the first 1 second
 samples_to_plot = time_duration * sampling_rate;  % Number of samples for 1 second
 
-% Find the signal that corresponds to 50 Hz in the signal names
-signal_50Hz_name = '';
+% Find the signal that corresponds to 49 Hz in the signal names
+signal_49Hz_name = '';
 for i = 1:length(signal_names)
-    if contains(signal_names{i}, '50_0Hz')
-        signal_50Hz_name = signal_names{i};
+    if contains(signal_names{i}, '49_0Hz')
+        signal_49Hz_name = signal_names{i};
         break;
     end
 end
 
-% Ensure that we found the 50 Hz signal
-if isempty(signal_50Hz_name)
-    disp('50 Hz signal not found in the loaded file.');
+% Ensure that we found the 49 Hz signal
+if isempty(signal_49Hz_name)
+    disp('49 Hz signal not found in the loaded file.');
     return;
 end
 
-% Extract the reconstructed 50 Hz signal
-reconstructed_signal_50Hz = signal_data.(signal_50Hz_name);
+% Extract the reconstructed 49 Hz signal
+reconstructed_signal_49Hz = signal_data.(signal_49Hz_name);
 
 % Plotting the original signal and reconstructed signal
 
@@ -67,11 +67,11 @@ xlabel('Time (s)');
 ylabel('Amplitude');
 grid on;
 
-% Subplot 2: Reconstructed 50Hz signal for the first 1 second
+% Subplot 2: Reconstructed 49Hz signal for the first 1 second
 time_reconstructed = (0:samples_to_plot-1) / sampling_rate;
 subplot(2, 1, 2);
-plot(time_reconstructed, reconstructed_signal_50Hz(1:samples_to_plot));
-title(sprintf('Reconstructed Signal (1 Second, 50 Hz, %.0f kHz Sampling Rate)', sampling_rate / 1000));
+plot(time_reconstructed, reconstructed_signal_49Hz(1:samples_to_plot));
+title(sprintf('Reconstructed Signal (1 Second, 49 Hz, %.0f kHz Sampling Rate)', sampling_rate / 1000));
 xlabel('Time (s)');
 ylabel('Amplitude');
 grid on;
