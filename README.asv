@@ -89,4 +89,7 @@ run('Plot_FFT_Comparison.m');
 - `Plot_signals/`: Contains plots the scripts needed to visualize the signals.
 - `Load_signals/`: Contains the `.mat` files with the reconstructed signals that has been saved.
 - `Goertzel_Algorithm_Freq_Est/`: Contains the scripts used to run frequeny estiamtion on an entire input signal
-- `Code_Migration_Goertzel/`: Contains the scripts used to run frequeny estiamtion on an entire input signal sliced up to a realtime like seting. The method only knows the latest 100ms of data each estiamtion round. 
+- `Code_Migration_Goertzel/`: Contains the scripts used to run frequeny estiamtion on an entire input signal
+ 
+
+## Cod

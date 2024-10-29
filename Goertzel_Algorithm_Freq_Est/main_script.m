@@ -21,6 +21,10 @@ elseif contains(filename, '64ksps')
     Fs = 64000;    % Sampling frequency (Hz) for 64ksps
 elseif contains(filename, '150ksps')
     Fs = 150000;   % Sampling frequency (Hz) for 150ksps
+elseif contains(filename, '250ksps')
+    Fs = 250000;   % Sampling frequency (Hz) for 250ksps
+elseif contains(filename, '500ksps')
+    Fs = 500000;   % Sampling frequency (Hz) for 500ksps
 else
     error('Unrecognized sampling rate in filename.');
 end
@@ -29,7 +33,7 @@ end
 T = 20;
 
 % Define other parameters
-window_duration = 0.2;  % 100 ms windows for frequency estimation
+window_duration = 0.1;  % 100 ms windows for frequency estimation
 window_type = 'hann';   % Choose window type: 'hamming', 'hann', 'blackman', 'none'
 
 % Initialize vectors to store deviation statistics
@@ -100,7 +104,7 @@ subplot(2, 1, 1);
 bar(frequencies, max_deviation);
 xlabel('Frequency (Hz)');
 ylabel('Max Deviation (mHz)');
-title('Maximum Deviation from Expected Frequency (mHz)');
+title(sprintf('Maximum Deviation from Expected Frequency (mHz) - Sampling Rate: %d Hz', Fs));  % Add sampling rate to the title
 grid on;
 
 % Plot Std Deviation
@@ -108,5 +112,5 @@ subplot(2, 1, 2);
 bar(frequencies, std_deviation);
 xlabel('Frequency (Hz)');
 ylabel('Std Deviation of Errors (mHz)');
-title('Standard Deviation of Frequency Errors (mHz)');
+title(sprintf('Standard Deviation of Frequency Errors (mHz) - Sampling Rate: %d Hz', Fs));  % Add sampling rate to the title
 grid on;

@@ -18,13 +18,13 @@ time_increment = 1 / sampling_rate;  % Time increment from sampling rate
 n_samples = length(volt);  % Total number of samples in the full signal
 time = (0:n_samples-1) * time_increment;  % Time vector for the full signal
 
-% Signal duration for saving (4 seconds)
-save_duration = 40;
+% Signal duration for saving (20 seconds)
+save_duration = 20;
 
 % Frequencies and sampling rates to be used
 frequencies = [49, 49.5, 50, 50.5, 51];
-sampling_rates = [2000, 64000, 150000];  % 2ksps, 64ksps, 150ksps
-sampling_names = ["2ksps", "64ksps", "150ksps"];
+sampling_rates = [2000, 64000, 150000, 250000, 500000];  % 2ksps, 64ksps, 150ksps
+sampling_names = ["2ksps", "64ksps", "150ksps", "250ksps", "500ksps"];
 
 % Find a starting point close to a zero crossing in the original signal
 threshold = 0.0001;  % Define a threshold for finding a value close to zero
