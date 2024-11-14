@@ -1,0 +1,2 @@
+# Project Overview
+This project provides is essentiallt only a pindescription. I have not spent any time on properly configuring the peripherals in cubeMX more than making sure we can use these pins for the intended purpose.
